@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Bundle Selection</title>
+    <style>
+        /* CSS VARIABLES for easy color management */
+        :root {
+            --primary-color: #007F61; /* The main Green color */
+            --light-green: #F4FBF9;   /* Background for expanded box */
+            --border-color: #C8C8C8;
+            --text-color: #333;
+            --transition-speed: 0.3s;
+        }
+
+        /* RESET & BASIC SETUP */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #ffffff;
+        }
+
+        /* CONTAINER layout */
+        .container {
+            width: 100%;
+            max-width: 400px; /* Mobile-friendly width */
+            padding: 20px;
+        }
+
+        .main-title {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 25px;
+            font-weight: 700;
+        }
+
+        /* BOX STYLING */
+        .bundle-box {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 15px;
+            position: relative;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        /* Header (Always Visible) */
+        .box-header {
+            display: flex;
+            align-items: center;
+            padding: 18px;
+        }
+
+        /* Custom Radio Button Circle */
+        .radio-circle {
+            width: 18px;
+            height: 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            margin-right: 15px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        /* Info Text Layout */
+        .header-info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column; /* Stacks Title above Price */
+        }
+
+        .box-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+
+        .box-price {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .discount-tag {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 14px;
+        }
+
+        /* MOST POPULAR BADGE styling */
+        .popular-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-bottom-left-radius: 4px;
+            font-weight: 600;
+        }
+
+        /* EXPANDED STATE (Active) */
+        .bundle-box.expanded {
+            border: 2px solid var(--primary-color);
+            background-color: var(--light-green);
+        }
+
+        /* Active Radio Button */
+        .bundle-box.expanded .radio-circle {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .bundle-box.expanded .radio-circle::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            background-color: white;
+            border-radius: 50%;
+        }
+
+        /* HIDDEN CONTENT (Selectors) */
+        .box-content {
+            max-height: 0; /* Hidden by default */
+            opacity: 0;
+            padding: 0 18px;
+            transition: max-height var(--transition-speed) ease, opacity var(--transition-speed) ease, padding var(--transition-speed) ease;
+        }
+
+        /* When expanded, show content */
+        .bundle-box.expanded .box-content {
+            max-height: 200px; /* Arbitrary large height to fit content */
+            opacity: 1;
+            padding-bottom: 18px;
+        }
+
+        /* Dropdown Layout */
+        .options-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .option-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .option-label {
+            font-size: 12px;
+            margin-right: 10px;
+            min-width: 40px;
+        }
+
+        select {
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 2px;
+            font-size: 12px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        /* FOOTER Area */
+        .footer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            color: var(--primary-color);
+            font-size: 14px;
+        }
+
+        .total-price {
+            font-weight: bold;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+            padding: 16px;
+            border: none;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .submit-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .strike {
+            text-decoration: line-through;
+            color: #999;
+            font-size: 12px;
+            margin-left: 5px;
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 class="main-title">Bundle & Save</h2>
+
+    <div class="bundle-box" onclick="toggleBox(this)" data-price="195.00">
+        <div class="box-header">
+            <div class="radio-circle"></div>
+            <div class="header-info">
+                <div class="box-title">1 Pair</div>
+                <div class="box-price">DKK 195.00</div>
+            </div>
+            <div class="discount-tag">50% OFF</div>
+        </div>
+        <div class="box-content">
+            <div class="options-wrapper">
+                <div class="option-row">
+                    <span class="option-label">#1</span>
+                    <label>Size <select><option>S</option><option>M</option><option>L</option></select></label>
+                    <label>Colour <select><option>Black</option><option>White</option></select></label>
+                </div>
+                <div class="option-row">
+                    <span class="option-label">#2</span>
+                    <label>Size <select><option>S</option><option>M</option><option>L</option></select></label>
+                    <label>Colour <select><option>Black</option><option>White</option></select></label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bundle-box expanded" onclick="toggleBox(this)" data-price="345.00">
+        <div class="popular-badge">MOST POPULAR</div>
+        <div class="box-header">
+            <div class="radio-circle"></div>
+            <div class="header-info">
+                <div class="box-title">2 Pair</div>
+                <div class="box-price">DKK 345.00 <span class="strike">DKK 195.00</span></div>
+            </div>
+            <div class="discount-tag">40% OFF</div>
+        </div>
+        <div class="box-content">
+            <div class="options-wrapper">
+                <div class="option-row">
+                    <span class="option-label">#1</span>
+                    <label>Size <select><option>S</option><option>M</option><option>L</option></select></label>
+                    <label>Colour <select><option>Colour</option><option>Blue</option></select></label>
+                </div>
+                <div class="option-row">
+                    <span class="option-label">#2</span>
+                    <label>Size <select><option>S</option><option>M</option><option>L</option></select></label>
+                    <label>Colour <select><option>Colour</option><option>Red</option></select></label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bundle-box" onclick="toggleBox(this)" data-price="528.00">
+        <div class="box-header">
+            <div class="radio-circle"></div>
+            <div class="header-info">
+                <div class="box-title">3 Pair</div>
+                <div class="box-price">DKK 528.00</div>
+            </div>
+            <div class="discount-tag">60% OFF</div>
+        </div>
+        <div class="box-content">
+            <div class="options-wrapper">
+                <div class="option-row">
+                    <span class="option-label">#1</span>
+                    <label>Size <select><option>S</option><option>M</option><option>L</option></select></label>
+                    <label>Colour <select><option>Black</option></select></label>
+                </div>
+                <div class="option-row">
+                    <span class="option-label">#2</span>
+                    <label>Size <select><option>S</option><option>M</option><option>L</option></select></label>
+                    <label>Colour <select><option>Black</option></select></label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-info">
+        <span>Free 2 Day Shipping</span>
+        <span>Total: <span class="total-price" id="total-price">DKK 345.00</span></span>
+    </div>
+
+    <button class="submit-btn" onclick="addToCart()">+ Add to Cart</button>
+
+</div>
+
+<script>
+    function toggleBox(clickedBox) {
+        // 1. Get all boxes
+        const allBoxes = document.querySelectorAll('.bundle-box');
+        
+        // 2. Loop through them to manage state
+        allBoxes.forEach(box => {
+            if (box === clickedBox) {
+                // Expand the clicked one
+                box.classList.add('expanded');
+                
+                // Update the total price at the bottom
+                const price = box.getAttribute('data-price');
+                document.getElementById('total-price').textContent = 'DKK ' + price;
+            } else {
+                // Collapse the others
+                box.classList.remove('expanded');
+            }
+        });
+    }
+
+    function addToCart() {
+        // Just a placeholder for functionality
+        const selectedBox = document.querySelector('.bundle-box.expanded .box-title').innerText;
+        alert('Added ' + selectedBox + ' to cart!');
+    }
+</script>
+
+</body>
+</html>
